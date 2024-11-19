@@ -1,0 +1,147 @@
+# Python specific
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.eggs/
+*.env
+*.venv
+env/
+venv/
+ENV/
+venv.bak/
+Pipfile.lock
+poetry.lock
+site/
+dist/
+build/
+*.egg
+
+# Data folder
+data/*
+/new_annotator_dev/test_images/*
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (PyCharm, etc.)
+.idea/
+*.iml
+*.iws
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*.swn
+*.swt
+*.swo
+*.bak
+*.orig
+*.lock
+
+# Virtual environment
+env/
+venv/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env
+.env.*.local
+*.local
+
+# Database and Data files
+*.sqlite3
+*.db
+*.sql
+*.sqlite
+*.h5
+*.csv
+*.parquet
+*.json
+
+# Compiled files
+*.o
+*.so
+*.a
+*.out
+
+# Archives
+*.tar
+*.tar.gz
+*.zip
+*.rar
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.tif
+*.tiff
+
+# Notebooks in alternative formats
+*.html
+*.pdf
+
+# Ignore IDE-specific project files
+*.sublime-workspace
+*.sublime-project
+
+# Caches
+.cache/
+*.stackdump
+
+# AWS & Azure CLI
+*.pem
+*.cer
+*.crt
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Docker
+*.pid
+*.pid.lock
+docker-compose.override.yml
+
+# Coverage reports
+coverage/
+*.cover
+*.coverage
+*.gcov
+.nyc_output/
+htmlcov/
+
+!new_annotator_dev/annotator/readme_figs/2_annotations.png
+!new_annotator_dev/annotator/readme_figs/one_annotation.png
+!new_annotator_dev/annotator/readme_figs/patch_size.png
+!new_annotator_dev/annotator/readme_figs/step_1.png
+!new_annotator_dev/annotator/readme_figs/step_1b.png
+
