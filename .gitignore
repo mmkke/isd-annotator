@@ -19,9 +19,6 @@ dist/
 build/
 *.egg
 
-# Data folder
-data/*
-/new_annotator_dev/test_images/*
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
@@ -139,9 +136,6 @@ coverage/
 .nyc_output/
 htmlcov/
 
-!new_annotator_dev/annotator/readme_figs/2_annotations.png
-!new_annotator_dev/annotator/readme_figs/one_annotation.png
-!new_annotator_dev/annotator/readme_figs/patch_size.png
-!new_annotator_dev/annotator/readme_figs/step_1.png
-!new_annotator_dev/annotator/readme_figs/step_1b.png
-
+# Allows specfic ignore filetypes within these directories
+!readme_figs/*.png
+!test_images/*.tif
