@@ -31,14 +31,14 @@ base_directory/
 │       ├── image_processor_class.py
 │       └── annotator_driver.py.csv
 ```
-Setting the file structure in this way allows for current pathing implementation to execute. Alternatively, the pathing setup can be modified in ```annotator.py``` to the user specifications.
+Setting the file structure in this way allows for current pathing implementation to execute. Alternatively, the pathing setup can be modified in ```annotator_driver.py``` to the user specifications.
 
 ### ```Step 3```
 Update ```image_folder``` variable assignment in ```annotator_driver.py``` to the name of the image folder, i.e., ```folder_1```, ```folder_2```, etc.
 
 ```python
 # UPDATE THIS: This is name of the folder that contains the images to be processed
-image_folder = 'test' # Change 'test' to your folder name!
+image_folder = 'test_images' # Change 'test' to your folder name!
 ```
 
 ### ```Step 4```
@@ -52,7 +52,7 @@ This GUI will appear:
 ### ```Step 5```
 Annotate the image.
 
-**Functionality**
+**Annotation Functionality:**
 * ***Clicks***
   * ```left click:``` Adds an annotation.
   * ```right click``` Remove a single annotation.
@@ -84,13 +84,28 @@ Add annotations, adjusting patch size and anchor point until satisfied with resu
 <img src="readme_figs/2_annotations.png" alt="Alt text" title="Optional Title" width="600">
 
 ### ```Step 6```
-Assign the image to destinaion folder with key strokes.
+Assign the image to a destination folder based on observed results with key strokes. The assignment will perform 4 actions:  
+* The current image will be moved to the destination folder.
+* An ISD map for the current image (```png```) will saved to the ```isd_maps``` folder.
+* ```annotations_csv.csv``` will updated with the annotation coordinates for the current image.
+* ```annotations.xml``` will be updated with annotation coordinates, patch size, and anchor point for the current image.
 
-***Key Strokes***
-* ```h```: Excellent results.
-* ```l```: Low quality results.
-* ```t```: Terrible results; the input image is of low quality
-* ```d```: Duplicate image.
+Once all images have been processed the program terminates.
+
+**Saving Functionality:**  
+
+* ***Key Strokes***
+  * ```h```: Excellent results.
+  * ```l```: Low quality results.
+  * ```t```: Terrible results; the input image is of low quality
+  * ```d```: Duplicate image.
+
+
+**Quitting Functionality:**  
+
+* ***Key Strokes***
+  * ```q```: The user can quit and restart the current image at any time.
+
 
 ### ```Results```
 
