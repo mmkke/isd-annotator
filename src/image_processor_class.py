@@ -1,3 +1,13 @@
+""" 
+Log SPace Chroamticity Image Pprocessor
+
+Michael Massone
+Created: 2024/11/10
+Updated: 2025/02/05
+
+This is class take in a 16bit image and create a log space chromaticity image and an ISD pixel map. 
+"""
+
 import numpy as np
 import cv2 
 
@@ -194,10 +204,10 @@ class LogChromaticity:
         shadow_means = np.array([self.get_patch_mean((y, x), self.patch_size) for y, x in self.shadow_pixels if x is not None and y is not None])
 
         # Calculate mean difference between lit and shadow regions
-        pixel_diff = lit_means - shadow_means
+        spectral_ratios = lit_means - shadow_means
         
-        norms = np.linalg.norm(pixel_diff, axis = 1, keepdims = True)
-        isds = pixel_diff / norms
+        norms = np.linalg.norm(spectral_ratios, axis = 1, keepdims = True)
+        isds = spectral_ratios / norms
 
         # Expand the annotation map for broadcasting
         weight_map_expanded = self.annotation_weight_map[:, :, :, np.newaxis]
@@ -205,7 +215,7 @@ class LogChromaticity:
         # Element multiplication between the pixel-specific weights and the ISD values; the weights sum to 1.
         weighted_isds = weight_map_expanded * isds
 
-        # Sum the values across the IDSs to get the weigthed mean 
+        # Sum the values across the ISDs to get the weigthed mean 
         weighted_mean_isds = np.sum(weighted_isds, axis = 2)
 
         # Update isd_map attribute

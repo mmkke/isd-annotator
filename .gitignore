@@ -138,4 +138,4 @@ htmlcov/
 
 # Allows specfic ignore filetypes within these directories
 !readme_figs/*.png
-!test_images/*.tif
+!images/folder_test/*.tif

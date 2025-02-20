@@ -2,19 +2,20 @@
 Image Annotator Class
 
 Nelson Farrell and Michael Massone
-7180 Advanced Perception
-November 10, 2024
-Bruce Maxwell, PhD.
+Created: 2024/11/10
+Updated:2025/02/05
+
 
 This file contains a class that allows a user to make annotations to an image and convert the image to log chromaticity space.
 
-This code uses a codebase written by: Chang Liu & Yunyi Chi
+This code based on a previous annotator created by: Chang Liu & Yunyi Chi
 """
 # Packages
-import cv2
 import os
+import cv2
 import csv
 import shutil
+import tifffile
 import numpy as np
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -33,7 +34,7 @@ class AnnotationManager:
 
     Annotate the lit area followed by the dark area! 
     """
-    def __init__(self):
+    def __init__(self, image_dir, isd_maps_dir):
         """
         Initializer for AnnotationManager
 
@@ -45,19 +46,14 @@ class AnnotationManager:
         self.clicks = []  # List to store (lit_row, lit_col, shad_row, shad_col) pairs
 
         # Directories
-        self.image_folder = None
-        self.high_quality_dir = None
-        self.low_quality_dir = None
-        self.duplicates_dir = None
-        self.image_error_dir = None
-        self.image_drop_dir = None
-        self.isd_maps_dir = None
+        self.image_folder = image_dir
+        self.isd_maps_dir = isd_maps_dir
         
-        # CSV file
-        self.csv_file = None
+        # XML file
         self.xml_file = None
 
         # Image of interest
+        self.annotated_image_list = None # List of already annotated image filenames
         self.img = None
         self.image_path = None # Used to read a UNCHANAGED version for processing
         self.processed_img = None
@@ -71,24 +67,6 @@ class AnnotationManager:
         The image processor converts the image to log chromaticity space using the annotations
         """
         self.img_processor = LogChromaticity()
-
-    def set_directories(self, directories) -> None:
-        """
-        Create the target directories if they do not exist, set to attributes.  
-        """
-        for attribute_name, directory_path in directories.items():
-            os.makedirs(directory_path, exist_ok=True)
-            setattr(self, attribute_name, directory_path)
-            print(f"Directory created or already exists: {directory_path}")
-   
-    def set_cvs_file(self, csv_file_path) -> None:
-        """
-        Create the cvs file if it does not exist; to csv_file attribute
-        """
-        if not os.path.exists(csv_file_path):
-            with open(csv_file_path, 'w', newline='') as csvfile:
-                self.csvwriter = csv.writer(csvfile)
-        self.csv_file = csv_file_path
 
     def set_xml_file(self, xml_file_path) -> None:
         """
@@ -130,18 +108,6 @@ class AnnotationManager:
             else:
                 print(f'Click shadow patch for pair {pair_num}')
 
-    def write_to_csv(self, image_name) -> None:
-        """ 
-        Writes image name and annotations to csv file.
-
-        Parameters:
-            image_name (str): Current image filename.
-        """
-        with open(self.csv_file, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            row = [image_name.lower()] + [item for pair in self.clicks for item in pair]
-            writer.writerow(row)
-
     @staticmethod
     def prettify_element(element):
         """Return a prettified XML string for a single element."""
@@ -149,12 +115,12 @@ class AnnotationManager:
         parsed = xml.dom.minidom.parseString(raw_str)
         return parsed.toprettyxml(indent="  ").strip()
 
-    def write_to_xml(self, image_name, target_directory):
+    def write_to_xml(self, image_name, status):
         """
         Writes image name, target directory, and annotations to a valid XML file.
         Ensures a single root element for the XML file.
         """
-        if not image_name or not target_directory:
+        if not image_name or not status:
             print("Error: image_name or target_directory is empty.")
             return
 
@@ -163,6 +129,8 @@ class AnnotationManager:
             if os.path.exists(self.xml_file):
                 tree = ET.parse(self.xml_file)
                 root = tree.getroot()
+                image_count = len(root.findall('.//image'))
+                print(f"Number of processed images: {image_count}")
             else:
                 root = ET.Element("annotations")
                 tree = ET.ElementTree(root)
@@ -170,7 +138,7 @@ class AnnotationManager:
             # Add new image element
             image_element = ET.Element("image")
             image_element.set("name", image_name.lower())
-            image_element.set("target_directory", target_directory)
+            image_element.set("status", status)
             image_element.set("patch_size", self.img_processor.get_patch_size())
             image_element.set("anchor_point", self.img_processor.get_anchor_point())
 
@@ -198,20 +166,6 @@ class AnnotationManager:
 
         except Exception as e:
             print(f"Error while writing to XML: {e}")
-
-    def move_image(self, image_path, destination_folder) -> None:
-        """
-        Moves image to specified directory.
-
-        Parameters:
-            image_path (str): Current image file path.
-            destination_folder (str): Destination directory path.
-        """
-        try:
-            shutil.move(image_path, destination_folder)
-            print(f"Moved image {os.path.basename(image_path)} to {destination_folder}.")
-        except Exception as e:
-            print(f"Error moving image {image_path}: {e}")
 
 
     def process_image(self) -> None:
@@ -252,7 +206,10 @@ class AnnotationManager:
             window_name = "Original Image ---------------------------------------------------------------- Processed Image"
             cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
             cv2.imshow(window_name, combined_image)
-            #cv2.resizeWindow(window_name, 1000, 1000)
+            cv2.moveWindow(window_name, 0, 100)
+
+            # IF needed for optimal window size
+            cv2.resizeWindow(window_name, 1000, 1000)
             
             if clickable:
                 cv2.setMouseCallback(window_name, self.click_event)
@@ -359,28 +316,54 @@ class AnnotationManager:
         """
         Save the pixel map to png.
 
-        Note: The isd values are multiplied by 255 before saving. When using the isd_maps the user has 
-        divide the isd_map by 255.0 and map to a float. 
+        Note: The isd values are multiplied by 65535 before saving. When using the isd_maps the user has 
+        divide the isd_map by 65535 and map to a float. 
         """
         pixel_map = self.img_processor.get_isd_pixel_map()
-        pixel_map = pixel_map * 255
+        print(f"Pixel map data type: {pixel_map.dtype}")
+        pixel_map = pixel_map * 65535
         image_name_no_ext = os.path.splitext(image_name)[0]
-        save_path = os.path.join(self.isd_maps_dir, f"{image_name_no_ext}_isd.png")
-        cv2.imwrite(save_path, pixel_map)
+        save_path = os.path.join(self.isd_maps_dir, f"{image_name_no_ext}_isd.tiff")
+        # pixel_map_image = Image.fromarray(pixel_map)
+        # image.save(save_path, format="TIFF")
+        tifffile.imwrite(save_path, pixel_map)
         print(f"ISD Pixel Map saved at {save_path}")
 
 
-    def export_completed_image(self, image_name, loc) -> None:
+    def export_completed_image(self, image_name, status) -> None:
         """
         Moves the current image to its destination folder, saves the isd_map, and updates the XML doc.
         """
-        print(f"Saving processed image to {loc}.")
-        self.write_to_xml(image_name=image_name, target_directory=loc)
-        self.move_image(self.image_path, loc)
-        self.save_pixel_map(image_name)
-        self.processed_img = None
+        if status == "completed":
+            print(f"Saving processed ISD map {self.isd_maps_dir}.")
+            self.write_to_xml(image_name, status)
+            self.save_pixel_map(image_name)
+            self.processed_img = None
+
+        if status == "dropped":
+            print(f"Dropping{image_name}.")
+            self.write_to_xml(image_name, status)
+            self.processed_img = None
 
 
+    def image_previously_annotated(self, image_name):
+        """
+        Checks to see if the current image has already been annotated.
+        """
+        if os.path.exists(self.xml_file):
+            if self.annotated_image_list is None:
+                try:
+                    tree = ET.parse(self.xml_file)
+                    root = tree.getroot()
+                    self.annotated_image_list = [image.get("name") for image in root.findall(".//image")]
+                except (FileNotFoundError, ET.ParseError) as e:
+                    print(f"Error loading XML file: {e}")
+                    return False
+
+            if image_name in self.annotated_image_list:
+                print(f"Image: {image_name} already annotated.")
+                return True
+        return False
 
     def annotate_images(self):
         """
@@ -388,54 +371,54 @@ class AnnotationManager:
         """
         for image_name in os.listdir(self.image_folder):
             if image_name.endswith(('tif', 'tiff')):
+                
+                # Check if image filename exists in annotation XML already
+                if self.image_previously_annotated(image_name):
+                    continue
+                
+                # Set image path
                 self.image_path = os.path.join(self.image_folder, image_name)
 
                 try:
+                    # Init image processing class
                     self.set_image_processor()
-                    self.img = cv2.imread(self.image_path)
 
+                    # Read image
+                    self.img = cv2.imread(self.image_path)
                     if self.img is None:
-                        print(f"Cannot open image: {image_name}. Moving to wrong folder.")
-                        self.move_image(self.image_path, self.image_error_dir)
+                        print(f"Cannot open image: {image_name}.")
                         continue
 
-                    self.reset() # Sets click count to zero
+                    # Sets click count to zero
+                    self.reset() 
+
+                    # GUI
                     self.display_images(clickable=True)
                     cv2.namedWindow("Log Space Widget")
                     cv2.createTrackbar("Anchor Point", "Log Space Widget", 104, 111, self.update_anchor)
                     cv2.createTrackbar("Patch Size", "Log Space Widget", 1, 61, self.update_patch)
 
+                    # Instructions
                     print("""Press: 
-                            \n    'h' to save image HIGH quality annotations 
-                            \n    'l' to save image LOW quality annotations
-                            \n    'd' to save image duplicate image annotations 
-                            \n    'r' to redo the annotations 
-                            \n    't' to drop the image for quality reasons. 
+                            \n    'Enter' to save image annotations 
+                            \n    'SPACE' to drop the image. 
+                            \n    'r' to redo the annotations
                             \n    'q' to quit the annotator.
-                            """)                    
+                            """)  
+
+                    # Annotation loop
                     while True:
 
                         key = cv2.waitKey(0)
 
-                        if key == ord('h') and self.is_complete():
-                            loc = self.high_quality_dir
-                            self.export_completed_image(image_name, loc)
-                            break  # Move to the next image
-
-                        elif key == ord('l') and self.is_complete():
-                            loc = self.low_quality_dir
-                            self.export_completed_image(image_name, loc)
-                            break  # Move to the next image
-
-                        elif key == ord('d') and self.is_complete():
-                            loc = self.duplicates_dir
-                            self.export_completed_image(image_name, loc)
+                        if key == 13 and self.is_complete():
+                            print(f"Saving annotations for {image_name}.")
+                            self.export_completed_image(image_name, "completed")
                             break  # Move to the next image
                         
-                        elif key == ord('t'):
-                            print(f"Trashing {image_name}. Bad Quality.")
-                            loc = self.image_drop_dir
-                            self.export_completed_image(image_name, loc)
+                        elif key == 32:
+                            print(f"Dropping {image_name}.")
+                            self.export_completed_image(image_name, "dropped")
                             break
 
                         elif key == ord('r'):
@@ -453,38 +436,8 @@ class AnnotationManager:
 
                 except Exception as e:
                     print(f"An error occurred with image {image_name}: {e}")
-                    self.move_image(self.image_path, self.image_error_dir)
         print("All images processed and data saved.")
 
 ##################################################################################################################################
 if __name__ == "__main__":
     pass
-
-
-# Initialize paths
-# image_folder = 'data/folder_3'  
-# high_quality_dir = 'data/folder_3/processed/high_quality'
-# low_quality_dir = 'data/folder_3/processed/low_quality'
-# duplicates_dir = 'data/folder_3/processed/duplicates'
-# image_error_dir = 'data/folder_3/image_error'
-# image_drop_dir = 'data/folder_3/bad_images'
-# isd_maps_dir = 'data/folder_3/processed/isd_maps'
-
-# directories = {
-#     "image_folder": image_folder,
-#     "high_quality_dir": high_quality_dir,
-#     "low_quality_dir":low_quality_dir,
-#     "duplicates_dir": duplicates_dir,
-#     "image_error_dir": image_error_dir,
-#     "image_drop_dir": image_drop_dir,
-#     "isd_maps_dir": isd_maps_dir
-# }
-
-# csv_file_path = 'data/folder_1/annotations_csv.csv'
-# xml_file_path = 'new_annotator_dev/test_images/annotations.xml'
-
-# image_annotator = AnnotationManager()
-# image_annotator.set_directories(directories)
-# image_annotator.set_cvs_file(csv_file_path = csv_file_path)
-# image_annotator.set_xml_file(xml_file_path)
-# image_annotator.annotate_images()
