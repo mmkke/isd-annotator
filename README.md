@@ -67,6 +67,10 @@ Setting the file structure in this way allows for current pathing implementation
      ```bash
      python image_annotator_driver.py folder_5
      ```
+     To save ISD pixel maps as ```.tiff``` in ```/annotations/{folder_name}/isd_maps/```. For example:
+     ```bash
+     python image_annotator_driver.py folder_5 --save_map
+     ```
 
 ### ```Step 4```
 **GUI**

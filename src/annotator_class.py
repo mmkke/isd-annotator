@@ -34,7 +34,7 @@ class AnnotationManager:
 
     Annotate the lit area followed by the dark area! 
     """
-    def __init__(self, image_dir, isd_maps_dir):
+    def __init__(self, image_dir, isd_maps_dir, save_isd_map=True):
         """
         Initializer for AnnotationManager
 
@@ -47,6 +47,7 @@ class AnnotationManager:
 
         # Directories
         self.image_folder = image_dir
+        self.save_isd_map = save_isd_map
         self.isd_maps_dir = isd_maps_dir
         
         # XML file
@@ -337,7 +338,8 @@ class AnnotationManager:
         if status == "completed":
             print(f"Saving processed ISD map {self.isd_maps_dir}.")
             self.write_to_xml(image_name, status)
-            self.save_pixel_map(image_name)
+            if self.save_isd_map:
+                self.save_pixel_map(image_name)
             self.processed_img = None
 
         if status == "dropped":
