@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='utf-8'?>
+<annotations><image name="tang_yilin_082.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="516" col="257" />
+    <shadow row="524" col="977" />
+  </click>
+</image><image name="tang_yilin_069.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="222" col="1023" />
+    <shadow row="90" col="441" />
+  </click>
+</image><image name="walsh_john_038.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="999" col="282" />
+    <shadow row="678" col="315" />
+  </click>
+</image><image name="tang_yilin_080.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="294" col="603" />
+    <shadow row="291" col="729" />
+  </click>
+</image><image name="tang_yilin_094.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="1161" col="826" />
+    <shadow row="1102" col="904" />
+  </click>
+</image><image name="tang_yilin_095.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="397" col="880" />
+    <shadow row="446" col="980" />
+  </click>
+</image><image name="tang_yilin_081.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="249" col="527" />
+    <shadow row="280" col="1197" />
+  </click>
+</image><image name="walsh_john_062.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="537" col="1035" />
+    <shadow row="711" col="1035" />
+  </click>
+  <click id="2">
+    <lit row="418" col="714" />
+    <shadow row="621" col="698" />
+  </click>
+</image><image name="walsh_john_076.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="493" col="956" />
+    <shadow row="491" col="776" />
+  </click>
+  <click id="2">
+    <lit row="208" col="1014" />
+    <shadow row="204" col="900" />
+  </click>
+</image><image name="wenqing_fan_073.tif" status="completed" patch_size="(1, 1)" anchor_point="[10.8 10.8 10.8]">
+  <click id="1">
+    <lit row="157" col="1134" />
+    <shadow row="445" col="1145" />
+  </click>
+  <click id="2">
+    <lit row="152" col="1375" />
+    <shadow row="477" col="1373" />
+  </click>
+</image></annotations>

@@ -315,7 +315,7 @@ class AnnotationManager:
 
     def save_pixel_map(self, image_name) -> None:
         """
-        Save the pixel map to png.
+        Save the pixel map to .tiff.
 
         Note: The isd values are multiplied by 65535 before saving. When using the isd_maps the user has 
         divide the isd_map by 65535 and map to a float. 
