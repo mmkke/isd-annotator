@@ -210,7 +210,7 @@ class AnnotationManager:
             cv2.moveWindow(window_name, 0, 100)
 
             # IF needed for optimal window size
-            cv2.resizeWindow(window_name, 1000, 1000)
+            # cv2.resizeWindow(window_name, 1000, 1000)
             
             if clickable:
                 cv2.setMouseCallback(window_name, self.click_event)
