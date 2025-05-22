@@ -3,7 +3,7 @@ Image Annotator Class
 
 Nelson Farrell and Michael Massone
 Created: 2024/11/10
-Updated:2025/02/05
+Updated:2025/05/22
 
 
 This file contains a class that allows a user to make annotations to an image and convert the image to log chromaticity space.
@@ -13,20 +13,11 @@ This code based on a previous annotator created by: Chang Liu & Yunyi Chi
 # Packages
 import os
 import cv2
-import csv
-import shutil
 import tifffile
 import numpy as np
-from pathlib import Path
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
 
-import matplotlib.pyplot as plt
-
-# Modules
-from surface_normal_class import NormalSegmenter
-from depth_class import DepthAnythingLoader
-from image_processor_class_dev import DepthBasedLogChromaticity
 
 # Class to manage the annotation state for each image
 class AnnotationManager:
@@ -71,22 +62,23 @@ class AnnotationManager:
         self.img_processor = None
         
         # Depth and segmenting  class object
-        self.set_depth_model()
-        self.surface_norm_processor = NormalSegmenter(model=self.depth_model, max_k=4)
+        # self.set_depth_model()
+        # self.surface_norm_processor = NormalSegmenter(model=self.depth_model)
 
-        
-
-    def set_image_processor(self):
+    def set_image_processor(self, img_processor):
         """
-        Instantiates new image processor object.
+        Sets new image processor object.
         The image processor converts the image to log chromaticity space using the annotations
         """
-        self.img_processor = DepthBasedLogChromaticity()
+        self.img_processor = img_processor
     
-    def set_depth_model(self, encoder = 'vits', checkpoint_dir = 'src/depth_anything_v2/checkpoints'):
+    def set_depth_model(self, model):
 
-        model_loader = DepthAnythingLoader(encoder=encoder, checkpoint_dir=checkpoint_dir)
-        self.depth_model = model_loader.get_model()
+        self.depth_model = model
+
+    def set_surface_norm_processor(self, surface_norm_processor):
+
+        self.surface_norm_processor = surface_norm_processor
 
     def set_xml_file(self, xml_file_path) -> None:
         """
@@ -407,7 +399,8 @@ class AnnotationManager:
 
                 try:
                     # Init image processing class
-                    self.set_image_processor()
+                    # self.set_image_processor()
+                    self.img_processor.reset_state()
 
                     # Read image
                     self.img_original = cv2.imread(self.image_path, cv2.IMREAD_UNCHANGED)
@@ -417,7 +410,11 @@ class AnnotationManager:
                         continue
                     
                     # Get surface normal segmentation
-                    self.segmentation_map, self.contours = self.surface_norm_processor.process_image(self.img, dynamic_k=None, clustering_method="S_KMEANS", neighbors=25)
+                    self.segmentation_map, self.contours = self.surface_norm_processor.process_image(self.img, 
+                                                                                                     k_strategy=3, 
+                                                                                                     clustering_method="S_KMEANS", 
+                                                                                                     neighbors=25,
+                                                                                                     morph=True)
                     self.img = self.surface_norm_processor.draw_contours(self.contours)
 
 
@@ -428,7 +425,7 @@ class AnnotationManager:
                     self.display_images(clickable=True)
                     cv2.namedWindow("Log Space Widget")
                     cv2.createTrackbar("Anchor Point", "Log Space Widget", 104, 111, self.update_anchor)
-                    cv2.createTrackbar("Patch Size", "Log Space Widget", 10, 61, self.update_patch)
+                    cv2.createTrackbar("Patch Size", "Log Space Widget", 11, 61, self.update_patch)
 
                     # Instructions
                     print("""Press: 

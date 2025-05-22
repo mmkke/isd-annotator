@@ -1,3 +1,10 @@
+"""
+Surface Normal Segmentation Class
+Michael Massone
+Created: 2025/5/15
+Updated: 2025/05/22
+"""
+
 import cv2
 import time
 from pathlib import Path
@@ -6,7 +13,6 @@ import numpy                as np
 import matplotlib.pyplot    as plt
 from matplotlib             import colors as mcolors
 from sklearn.decomposition  import PCA
-from collections            import deque
 from kneed                  import KneeLocator
 
 # Modules
@@ -23,7 +29,7 @@ class NormalSegmenter:
         max_k (int): Number of clusters for KMeans segmentation.
     """
 
-    def __init__(self, model=None, max_k=6, seed=18):
+    def __init__(self, model=None, max_k=10, seed=18):
         """
         Initialize the NormalSegmenter.
 
@@ -42,13 +48,13 @@ class NormalSegmenter:
                         "#39FF14",  # Neon Green
                         "#FF073A",  # Neon Red
                         "#0FF0FC",  # Neon Cyan
-                        # "#FF6EC7",  # Neon Pink
+                        "#FF6EC7",  # Neon Pink
                          "#F5FE00",  # Neon Yellow
-                        # "#7DF9FF",  # Electric Blue
-                        # "#FF61AB",  # Hot Pink
-                        # "#FE019A",  # Magenta
-                        # "#16F529",  # Bright Lime
-                        # "#FF9900",  # Neon Orange
+                        "#7DF9FF",  # Electric Blue
+                        "#FF61AB",  # Hot Pink
+                        "#FE019A",  # Magenta
+                        "#16F529",  # Bright Lime
+                        "#FF9900",  # Neon Orange
                     ]
     def reset(self):
         self.image_path = None
@@ -357,6 +363,56 @@ class NormalSegmenter:
         # Reshape labels in to 2D map
         label_map = labels.reshape(normal_map.shape[:2]).astype(np.uint8)
         return label_map, inertia
+    
+    def angular_distance(self, v1, v2):
+        """Returns angular distance (in radians) between two unit vectors."""
+        cos_sim = np.clip(np.dot(v1, v2), -1.0, 1.0)
+        return np.arccos(cos_sim)
+    
+    def online_clustering(self, normals, threshold_rad=3.0):
+        """
+        Online clustering of unit vectors using angular distance.
+
+        Args:
+            points (np.ndarray): Array of shape (N, 3), each row a unit vector.
+            threshold_rad (float): Angular distance threshold in radians.
+
+        Returns:
+            List[np.ndarray]: List of cluster centers.
+            List[int]: Cluster assignment index for each input point.
+        """
+        clusters = []
+        assignments = []
+        h, w, c = normals.shape
+        normals_flat = normals.reshape(h * w, c).astype(np.float32) # Flatten (h*w, c)
+        normals_flat /= np.linalg.norm(normals_flat) # Normalize
+
+        # For every normal in image
+        for p in normals_flat:
+            # if no clusters start at segment=0
+            if not clusters:
+                clusters.append(p) # create new cluster centered at p
+                assignments.append(0) # create new cluster label
+                self.logger.debug(f"First cluster centroid initialized.")
+                continue
+
+            distances = [self.angular_distance(p, c) for c in clusters] # measure angular distance to all current cluster centroids
+            min_dist = min(distances) # Find the cluster with the min distance
+            self.logger.debug(f"Min dist: {min_dist}")
+            min_idx = distances.index(min_dist) # get index
+
+            # threshold distance in rads
+            if min_dist > threshold_rad:
+                clusters.append(p) # create new cluster centered at p
+                assignments.append(len(clusters) - 1) # create new cluster label
+                self.logger.debug(f"New cluster found: {len(clusters) - 1}")
+            else:
+                assignments.append(min_idx) # assign to existing cluster
+
+        label_map = np.array(assignments).reshape(h, w) # reshape to get map
+        centers = np.array(clusters) # centroids
+        self.logger.debug(f"Number of clusters found = {label_map.nunique()}")
+        return label_map, centers
 
     
     def smooth_mask_open_close(self, label_map, open_ksize=5, close_ksize=7):
@@ -427,15 +483,20 @@ class NormalSegmenter:
         vis = color_list[label_map % self.optimal_k]
         return vis
 
-    def process_image(self, image_input, dynamic_k=None, clustering_method="KMEANS", neighbors=25, morph=True):
+    def process_image(self, image_input, k_strategy=None, clustering_method="S_KMEANS", neighbors=25, morph=True):
         """
         Full pipeline: from image input → depth → normals → clusters → contours.
 
         Args:
             image_input (str or np.ndarray): Either the path to the 16-bit input image (str),
                                             or an already loaded image (np.ndarray).
-            dynamic_k (str): "PCA" for PCA based dynamic k, or "elbow" for elbow based kneedle approach. IF None, optimal is set to max_k.
+            k_strategy (int or str): Strategy for determining the number of clusters `k`.
+                - If an int, it specifies the exact number of clusters.
+                - If "elbow", the optimal `k` is determined using the elbow method.
+                - If "pca", the number of clusters is estimated based on PCA variance analysis.
+            clustering_method (str): Clustering algorithm to use. Default is "KMEANS".
             neighbors (int): Neighborhood for bilateral filter applied to surface normal map. 
+            morph (bool): Whether to apply morphological operations after clustering.
 
         Returns:
             Tuple[np.ndarray, Dict[int, List[np.ndarray]]]:
@@ -462,16 +523,16 @@ class NormalSegmenter:
         colored_normals, up, front, side = self.colorize_normals(normal_map)
         colored_normals_smoothed = cv2.bilateralFilter(colored_normals, d=neighbors, sigmaColor=75, sigmaSpace=70)
 
-        if dynamic_k == 'PCA':
+        if k_strategy == 'PCA':
             self.optimal_k = self.find_optimal_k_with_pca(colored_normals_smoothed, threshold=0.99)
-        elif dynamic_k == 'elbow':
+        elif k_strategy == 'elbow':
             self.optimal_k = self.find_optimal_k_with_elbow(colored_normals_smoothed, clustering_method, s=2)
-        else:
+        elif isinstance(k_strategy, int):
             reshaped_normals = colored_normals_smoothed.reshape(-1, 3)
             if self.check_for_low_variance(reshaped_normals):
                 self.optimal_k = 1
             else:
-                self.optimal_k = self.max_k
+                self.optimal_k = k_strategy
 
         if clustering_method == "KMEANS":
             self.logger.debug(f"Clustering with Standard Kmeans | k= {self.optimal_k}")
@@ -479,6 +540,9 @@ class NormalSegmenter:
         if clustering_method == "S_KMEANS":
             self.logger.debug(f"Clustering with Spherical Kmeans | k= {self.optimal_k}")
             label_map, _ = self.cluster_with_spherical_kmeans(colored_normals_smoothed, k=self.optimal_k)
+        if clustering_method == "online":
+            self.logger.debug(f"Clustering with Online Clustering | k= null")
+            label_map, _ = self.online_clustering(colored_normals_smoothed, threshold_rad=0.2)
         if morph:
             label_map = self.smooth_mask_open_close(label_map, open_ksize=7, close_ksize=9)
         contours = self.contour_segments(label_map)
@@ -516,7 +580,7 @@ def run_test():
         # image_path = "/Users/mikey/Library/Mobile Documents/com~apple~CloudDocs/Code/code_projects/isd-annotator/images/example_folder/wenqing_fan_040.tif"
         image_path = path
         segmenter = NormalSegmenter(model=model, max_k=3)
-        label_map, contours = segmenter.process_image(image_path, dynamic_k=None, clustering_method="S_KMEANS", neighbors=25, morph=True)
+        label_map, contours = segmenter.process_image(image_path, k_strategy=3, clustering_method="S_KMEANS", neighbors=25, morph=True)
         end = time.time()
         print("Total time: ", (end-start))
         # Show contours

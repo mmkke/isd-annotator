@@ -23,7 +23,7 @@ import xml.dom.minidom
 
 
 # Modules
-from image_processor_class import LogChromaticity
+from old_version.image_processor_class import LogChromaticity
 
 # Class to manage the annotation state for each image
 class AnnotationManager:

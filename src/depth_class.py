@@ -1,5 +1,12 @@
-import torch
+"""
+Depth Anything V2 Model Loader
+Michael Massone
+Created: 2025/5/15
+Updated: 2025/05/22
+"""
 
+
+import torch
 from depth_anything_v2.dpt import DepthAnythingV2
 
 class DepthAnythingLoader:

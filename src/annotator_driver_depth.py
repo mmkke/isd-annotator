@@ -4,7 +4,7 @@ Image Annotator Driver
 Michael Massone
 7180 Advanced Perception
 Created: 2024/11/10
-Updated: 2025/02/05
+Updated: 2025/05/22
 
 This is the driver file for the AnnotationManager 
 """
@@ -13,8 +13,11 @@ import os
 import argparse
 
 # Modules
-from image_processor_class import LogChromaticity
-from annotator_class import AnnotationManager
+# from image_processor_class_dev import DepthBasedLogChromaticity
+from annotator_class_depth import AnnotationManager
+from surface_normal_class import NormalSegmenter
+from depth_class import DepthAnythingLoader
+from image_processor_class_depth import DepthBasedLogChromaticity
 
 # Argparser
 parser = argparse.ArgumentParser(description="Select Folder for annotation. Example: 'folder_5'")
@@ -36,6 +39,8 @@ save_isd_map = args.save_map
 image_dir = f'images/{folder}/'
 isd_map_dir = f'annotations/{folder}/isd_maps/'
 xml_file_path = f'annotations/{folder}/annotations.xml'
+encoder = "vits"
+checkpoint_dir = 'src/depth_anything_v2/checkpoints'
 
 
 # Check if the directory exists
@@ -51,7 +56,13 @@ else:
 
 def main():
     try:
+        depth_loader = DepthAnythingLoader(encoder=encoder, checkpoint_dir=checkpoint_dir)
+        depth_model = depth_loader.get_model()
+        surface_norm_processor = NormalSegmenter(model=depth_model)
+        img_processor = DepthBasedLogChromaticity()
         image_annotator = AnnotationManager(image_dir, isd_map_dir, save_isd_map)
+        image_annotator.set_image_processor(img_processor)
+        image_annotator.set_surface_norm_processor(surface_norm_processor)
         image_annotator.set_xml_file(xml_file_path)
         image_annotator.annotate_images()
     except Exception as e:

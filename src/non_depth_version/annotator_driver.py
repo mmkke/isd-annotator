@@ -13,8 +13,8 @@ import os
 import argparse
 
 # Modules
-# from image_processor_class_dev import DepthBasedLogChromaticity
-from annotator_class_dev import AnnotationManager
+from old_version.image_processor_class import LogChromaticity
+from annotator_class import AnnotationManager
 
 # Argparser
 parser = argparse.ArgumentParser(description="Select Folder for annotation. Example: 'folder_5'")

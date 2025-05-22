@@ -1,9 +1,9 @@
 """ 
-Log SPace Chroamticity Image Pprocessor
+Log Space Chromaticity Image Processor
 
 Michael Massone
 Created: 2024/11/10
-Updated: 2025/05/13
+Updated: 2025/05/22
 
 This is class take in a 16bit image and create a log space chromaticity image and an ISD pixel map and Surface Normnal segmentation. 
 """
@@ -30,13 +30,38 @@ class DepthBasedLogChromaticity:
         self.linear_converted_log_chroma_8bit = None
 
         # Default patch size set to single pixel value
-        self.patch_size = (5, 5)
+        self.patch_size = (11, 11)
 
         self.lit_pixels = None
         self.shadow_pixels = None
         self.mean_isd = None
 
         # Map matrices
+        self.closest_annotation_map = None
+        self.annotation_weight_map = None
+        self.isd_map = None
+
+    def reset_state(self) -> None:
+        """
+        Resets the internal state of the LogChromaticity instance.
+        This is useful when reusing the same instance for a new image.
+        """
+        self.logger.info("Resetting LogChromaticity state.")
+
+        self.method = 'mean'
+        self.anchor_point = np.array([10.8, 10.8, 10.8])
+        self.rgb_img = None
+        self.log_img = None
+        self.img_chroma = None
+        self.linear_converted_log_chroma = None
+        self.linear_converted_log_chroma_8bit = None
+
+        self.patch_size = (11, 11)
+
+        self.lit_pixels = None
+        self.shadow_pixels = None
+        self.mean_isd = None
+
         self.closest_annotation_map = None
         self.annotation_weight_map = None
         self.isd_map = None

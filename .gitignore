@@ -139,6 +139,11 @@ htmlcov/
 # model checkpoints
 *.pth
 
+# Specific dirs
+dev/
+clustering_tests/
+annotations/
+
 # Allows specfic ignore filetypes within these directories
 !readme_figs/*.png
 !images/folder_test/*.tif
