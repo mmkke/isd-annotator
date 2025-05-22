@@ -61,6 +61,8 @@ Save model checkpoint to: ```src/depth_anything_v2/checkpoints```
       -O src/depth_anything_v2/checkpoints/depth_anything_v2_vits14.pth
 ```
 
+*NOTE:* If you choose to use model other than the ```Depth-Anything-V2-Small```, you will need to change the ```encoder``` and ```checkpoint_dir``` variables in the ```annotator_driver_depth.py``` to match your model. See the ```depth_class``` for more details.  	
+
 ### ```Step 2```
 **Prepare your folder**:
    - Ensure that your images are placed inside a new folder with a name you will specify when running the script.
