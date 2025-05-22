@@ -136,6 +136,9 @@ coverage/
 .nyc_output/
 htmlcov/
 
+# model checkpoints
+*.pth
+
 # Allows specfic ignore filetypes within these directories
 !readme_figs/*.png
 !images/folder_test/*.tif
